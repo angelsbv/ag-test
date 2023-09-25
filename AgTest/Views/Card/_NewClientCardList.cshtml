@@ -1,0 +1,302 @@
+﻿@using Ag.BLL.Models;
+
+<div class="row">
+    <h3>Cards List</h3>
+
+    <p>
+        <a id="create-new" href="#">Create New</a>
+    </p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    Type
+                </th>
+                <th>
+                    Bank
+                </th>
+                <th>
+                    Number
+                </th>
+                <th>
+                    Expiry Month
+                </th>
+                <th>
+                    Expiry Year
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="cards-tbody">
+
+        </tbody>
+    </table>
+</div>
+
+<div id="modal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 id="modal-title" class="modal-title">Create Card</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                </button>
+            </div>
+            <div id="form-fields-container" class="modal-body">
+                <div class="form-group">
+                    <label for="CardType" class="form-label">Type</label>
+                    <select id="CardType" name="CardType" class="form-select">
+                        <option value="1">Credit</option>
+                        <option value="2">Debit</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="Bank" class="form-label">Bank</label>
+                    <input id="Bank" name="Bank" class="form-control" required minlength="3" />
+                    <div class="invalid-feedback">
+                        Please provide a bank
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="CardNumber" class="form-label">Number</label>
+                    <input id="CardNumber" name="CardNumber"
+                           class="form-control" autocomplete="cc-number" required pattern=".{19}"/>
+                    <div class="invalid-feedback">
+                        Please provide a valid card number
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-6">
+                        <label for="ExpiryMonth" class="form-label">Expiry Month</label>
+                        <input id="ExpiryMonth" name="ExpiryMonth" class="form-control"
+                               required pattern="1[0-2]|[1-9]|0[1-9]|1[0-2]" />
+                        <div class="invalid-feedback">
+                            Please provide a valid month (1-12)
+                        </div>
+                    </div>
+                    <div class="form-group col-6">
+                        <label for="ExpiryYear" class="form-label">Expiry Year</label>
+                        <input id="ExpiryYear" name="ExpiryYear" class="form-control" type="number" required />
+                        <div class="invalid-feedback"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-save-card" type="button" class="btn btn-primary">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelector('body').addEventListener('scriptsLoaded', main);
+
+    function main() {
+        const createNewElem = document.querySelector('#create-new');
+        const saveCardBtnElem = document.querySelector('#btn-save-card');
+        const cardFormElem = document.querySelector('#form-fields-container');
+        const modalElem = document.querySelector('#modal');
+        const modalTitleElem = document.querySelector('#modal-title');
+        const cardsTbody = document.querySelector('#cards-tbody');
+        const cardNumberField = document.querySelector('#CardNumber')
+
+        const cardTypes = {
+            1: 'Credit',
+            2: 'Debit'
+        };
+        let selectedCardIdx = null;
+
+        document.body.appendChild(modalElem);
+
+        createNewElem.addEventListener('click', evt => {
+            evt.preventDefault();
+            selectedCardIdx = null;
+            modalTitleElem.innerText = 'Create Client';
+            $('#modal').modal('show');
+            cardFormElem.querySelectorAll('[name]').forEach(field => {
+                field.parentElement.classList.remove('was-validated');
+                field.value = '';
+            });
+        });
+
+        saveCardBtnElem.addEventListener('click', evt => {
+            evt.preventDefault();
+            const fields = cardFormElem.querySelectorAll('[name]');
+            let valid = true;
+            let cardRow = null;
+            let cardIdx = 0;
+
+            if (selectedCardIdx !== null) {
+                cardRow = document.querySelector(`#card-row-${selectedCardIdx}`);
+                cardIdx = selectedCardIdx;
+            } else {
+                cardRow = document.createElement('tr');
+                cardRow.classList.add('card-row');
+                cardIdx = document.querySelectorAll('.card-row').length;
+                cardRow.setAttribute('id', `card-row-${cardIdx}`);
+            }
+
+            let cardRowHtml = '';
+
+            fields.forEach(field => {
+                if (field.name === 'ExpiryYear') {
+                    const currentYear = new Date().getFullYear();
+                    field.setAttribute('min', currentYear);
+                    const fieldFeedback = field.nextElementSibling;
+                    if (fieldFeedback) {
+                        fieldFeedback.innerHTML = `Year must be greater or equal than ${currentYear}`;
+                    }
+                }
+
+                if (field.hasAttribute('required')) {
+                    field.parentElement.classList.add('was-validated');
+                }
+
+                if (field.name === 'CardNumber') {
+                    validateUniqueCardNumber();
+                }
+
+                if (valid) {
+                    cardRowHtml += `
+                        <td>
+                            ${displayValue(field.name, field.value)}
+                            <input
+                                name="Cards[${cardIdx}].${field.name}"
+                                value="${field.value}"
+                                data-field-name="${field.name}"
+                                hidden
+                            />
+                        </td>
+                    `;
+                    valid = field.validity.valid;
+                }
+            });
+
+            if (valid) {
+                cardRow.innerHTML = cardRowHtml;
+                cardRow.appendChild(buildTdActions(cardIdx))
+                if (!selectedCardIdx) {
+                    cardsTbody.appendChild(cardRow);
+                }
+                $('#modal').modal('hide');
+                fields.forEach(field => {
+                    field.parentElement.classList.remove('was-validated');
+                    field.value = '';
+                });
+            }
+        });
+
+        cardNumberField.addEventListener('keyup', _ => validateUniqueCardNumber());
+
+        function validateUniqueCardNumber() {
+            const target = cardNumberField;
+            let selector = `input[value="${target.value}"]`;
+            if (selectedCardIdx !== null) {
+                selector += `:not([name="Cards[${selectedCardIdx}].CardNumber"])`;
+            }
+            const cards = cardsTbody.querySelectorAll(selector);
+            const feedbackElem = target.nextElementSibling;
+            if (cards.length > 0) {
+                target.classList.add('invalid');
+                const msg = 'Please provide an unique card number';
+                target.setCustomValidity(msg);
+                feedbackElem.innerHTML = msg;
+                return;
+            }
+            target.setCustomValidity('');
+            feedbackElem.innerHTML = 'Please provide a valid card number';
+            target.classList.remove('invalid');
+        }
+
+        function buildTdActions(cardIdx) {
+            const td = document.createElement('td');
+            const editElem = document.createElement('a');
+            const deleteElem = document.createElement('a');
+
+            editElem.setAttribute('href', '#');
+            deleteElem.setAttribute('href', '#');
+
+            editElem.innerText = 'Edit';
+            deleteElem.innerText = 'Delete';
+
+            editElem.addEventListener('click', () => edit(cardIdx));
+            deleteElem.addEventListener('click', () => remove(cardIdx));
+
+            td.appendChild(editElem);
+            td.append(document.createTextNode(' | '));
+            td.appendChild(deleteElem);
+
+            return td;
+        }
+
+        function edit(idx) {
+            const cardRow = document.querySelector(`#card-row-${idx}`);
+            if (!cardRow) {
+                return;
+            }
+            const formFields = cardFormElem.querySelectorAll('[name]');
+            cardRow.querySelectorAll('[name]').forEach(field => {
+                for (const formField of formFields) {
+                    if (formField.name === field.dataset.fieldName) {
+                        formField.value = field.value;
+                        if (formField.selectedIndex !== undefined) {
+                            formField.selectedIndex = Number(field.value) - 1;
+                        }
+                        break;
+                    }
+                }
+            });
+            selectedCardIdx = idx;
+            modalTitleElem.innerText = 'Edit Client';
+            $('#modal').modal('show');
+        }
+
+        function remove(idx) {
+            if (!confirm('Are you sure you want to delete this card?')) {
+                return;
+            }
+            const cardRow = document.querySelector(`#card-row-${idx}`);
+            if (!cardRow) {
+                return;
+            }
+            cardRow.remove();
+        }
+
+        function displayValue(name, value) {
+            try {
+                if (name === 'CardType') {
+                    return cardTypes[value];
+                }
+                if (name === 'ExpiryMonth') {
+                    return Intl.DateTimeFormat('en', { month: 'short' }).format(new Date(2009, (+value) - 1, 10));
+                }
+                return value;
+            } catch { }
+            return value;
+        }
+
+        $('#CardNumber').inputmask({
+            mask: "9999 9999 9999 9999",
+            showMaskOnHover: false,
+            showMaskOnFocus: false,
+            placeholder: ''
+        });
+
+        $('#ExpiryMonth').inputmask({
+            mask: '99',
+            showMaskOnHover: false,
+            showMaskOnFocus: false,
+            placeholder: '',
+            onBeforeWrite: function (event, buffer) {
+                if (event.type !== 'blur') {
+                    return null;
+                }
+                let currentValue = buffer.join('');
+                return {
+                    refreshFromBuffer: true,
+                    buffer: currentValue.replace(/\_/g, '').padStart(2, 0).split('')
+                };
+            }
+        });
+    }
+</script>

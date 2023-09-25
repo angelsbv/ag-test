@@ -1,0 +1,59 @@
+﻿@using Ag.BLL.Models
+@model Ag.BLL.Models.Client
+
+<h3>Cards List</h3>
+<div class="row">
+    <p>
+        <a asp-controller="Card" asp-action="Create" asp-route-code="@Model.Code">
+            Create New
+        </a>
+    </p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    Type
+                </th>
+                <th>
+                    Bank
+                </th>
+                <th>
+                    Number
+                </th>
+                <th>
+                    Expiry Month
+                </th>
+                <th>
+                    Expiry Year
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Cards)
+            {
+                <tr>
+                    <td>
+                        @(((CardTypeCode)item.CardType).ToString())
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Bank)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.CardNumber)
+                    </td>
+                    <td>
+                        @(new DateTime(2023, item.ExpiryMonth, 23).ToString("MMM"))
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.ExpiryYear)
+                    </td>
+                    <td>
+                        <a asp-action="Edit" asp-controller="Card" asp-route-code="@item.CardId">Edit</a> |
+                        <a asp-action="Delete" asp-controller="Card" asp-route-code="@item.CardId">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

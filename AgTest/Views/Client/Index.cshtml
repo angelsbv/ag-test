@@ -1,0 +1,53 @@
+﻿@model IEnumerable<Ag.BLL.Models.Client>
+
+@{
+    ViewData["Title"] = "Clients List";
+}
+
+<h1>Clients List</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.FirstName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LastName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ContactNumber)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Occupation)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.FirstName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.LastName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ContactNumber)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Occupation)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-code="@item.Code">Edit</a> |
+                <a asp-action="Details" asp-route-code="@item.Code">Details</a> |
+                <a asp-action="Delete" asp-route-code="@item.Code">Delete</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

@@ -1,0 +1,18 @@
+{
+  "name": "ag.e2e",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "up": "cd ../AgTest/ && dotnet publish --configuration Test && powershell \"$pwd\\bin\\Test\\net6.0\\publish\\Ag.Web.exe\"",
+    "start": "npx playwright test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.38.1",
+    "@types/node": "^20.6.4",
+    "start-server-and-test": "^2.0.1"
+  }
+}
